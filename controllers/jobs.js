@@ -61,6 +61,8 @@ const getAllJobs = async (req, res) => {
   const totalJobs = await Job.countDocuments(queryObject);
   const numOfPages = Math.ceil(totalJobs/limit)
 
+  // first and last active page number functionality
+  
   let firstActivePageResultNumber = skip + 1
   let lastActivePageResultNumber = skip + limit
 
