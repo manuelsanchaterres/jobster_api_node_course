@@ -10,6 +10,10 @@ const cors = require('cors')
 const express = require('express');
 const app = express();
 
+// only if we deploy to heroku
+
+// app.set('trust proxy', 1)
+
 const connectDB = require('./db/connect');
 const authenticateUser = require('./middleware/authentication');
 // routers
