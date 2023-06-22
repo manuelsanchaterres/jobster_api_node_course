@@ -1,11 +1,164 @@
 const Job = require('../models/Job')
 const { StatusCodes } = require('http-status-codes')
 const { BadRequestError, NotFoundError } = require('../errors')
+const getJobsActivePage = require('../utils/pagination/getJobsActivePage')
+
+/* course solution */
 
 const getAllJobs = async (req, res) => {
-  const jobs = await Job.find({ createdBy: req.user.userId }).sort('createdAt')
-  res.status(StatusCodes.OK).json({ jobs, count: jobs.length })
+
+  let {status, jobType, sort, page, search, limit} = req.query
+
+  const queryObject = {
+
+    createdBy: req.user.userId,
+  }
+
+  if (search) {
+
+    queryObject.position = {$regex: search, $options: 'i'}
+
+  }
+
+  if (status && status !== 'all') {
+
+    queryObject.status = status
+
+  }
+
+  if (jobType && jobType !== 'all') {
+
+    queryObject.jobType = jobType
+
+  }
+
+  let sortValue = ""
+
+  if (sort === 'latest') {
+
+    sortValue = '-createdAt'
+  } else if (sort === 'oldest') {
+
+    sortValue = 'createdAt'
+
+  } else if (sort === 'a-z') {
+
+    sortValue = 'position'
+  } else if (sort === 'z-a') {
+
+    sortValue = '-position'
+  }
+
+  let result = Job.find(queryObject).sort(sortValue)
+
+  page = Number(page) || 1
+  limit = Number (limit) || 10
+  const skip = (page - 1) * limit;
+
+  result = result.skip(skip).limit(limit)
+  const jobs = await result
+
+  const totalJobs = await Job.countDocuments(queryObject);
+  const numOfPages = Math.ceil(totalJobs/limit)
+
+  let firstActivePageResultNumber = skip + 1
+  let lastActivePageResultNumber = skip + limit
+
+
+  if (page === numOfPages) {
+
+    lastActivePageResultNumber = skip + (totalJobs - skip)
+
+  }
+
+  res.status(StatusCodes.OK).json({ jobs, totalJobs, numOfPages, 
+    
+    pageresults : {firstActivePageResultNumber, lastActivePageResultNumber} 
+  
+  })
+
 }
+
+/* my solution */
+
+// const getAllJobs = async (req, res) => {
+
+//   const {status, jobType, sort, page, search, limit} = req.query
+
+//   const queryObject = {
+
+//     createdBy: req.user.userId,
+//   }
+
+//   if (search) {
+
+//     queryObject.position = {$regex: search, $options: 'i'}
+
+//   }
+
+//   if (status && status !== 'all') {
+
+//     queryObject.status = status
+
+//   }
+
+//   if (jobType && jobType !== 'all') {
+
+//     queryObject.jobType = jobType
+
+//   }
+
+//   let sortValue = ""
+
+//   if (sort === 'latest') {
+
+//     sortValue = '-createdAt'
+//   } else if (sort === 'oldest') {
+
+//     sortValue = 'createdAt'
+
+//   } else if (sort === 'a-z') {
+
+//     sortValue = 'position'
+//   } else if (sort === 'z-a') {
+
+//     sortValue = '-position'
+//   }
+
+//   let result = Job.find(queryObject).sort(sortValue)
+
+//   let jobs = await result
+
+//   const totalJobs = jobs.length
+
+//   /* we calculate the number of pages to show depending 
+  
+//   on number of model received results and results per page limit */
+
+//   const numOfPages = Math.ceil (totalJobs/limit)
+
+//   const skippedDocuments = (page - 1) * limit
+
+//   const afterSkipJobs = await Job.find(queryObject).sort(sortValue).skip(skippedDocuments)
+  
+//   const filteredJobs = getJobsActivePage(limit, skippedDocuments,afterSkipJobs, numOfPages, totalJobs, page)
+
+//   // first and last active page results limits
+  
+//   let firstActivePageResultNumber = skippedDocuments + 1
+//   let lastActivePageResultNumber = skippedDocuments + parseInt(limit)
+
+//   if (page == numOfPages) {
+
+//     lastActivePageResultNumber = totalJobs
+
+//   }
+
+//   console.log(firstActivePageResultNumber,lastActivePageResultNumber);
+//   res.status(StatusCodes.OK).json({ jobs: filteredJobs, totalJobs, numOfPages, pageresults : {firstActivePageResultNumber, lastActivePageResultNumber} })
+
+// }
+
 const getJob = async (req, res) => {
   const {
     user: { userId },
