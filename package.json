@@ -28,7 +28,7 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "nodemon": "^1.14.9"
+    "nodemon": "^2.0.22"
   },
   "engines": {
     "node": "18.x"
